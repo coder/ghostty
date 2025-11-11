@@ -137,6 +137,22 @@ comptime {
         @export(&c.sgr_unknown_partial, .{ .name = "ghostty_sgr_unknown_partial" });
         @export(&c.sgr_attribute_tag, .{ .name = "ghostty_sgr_attribute_tag" });
         @export(&c.sgr_attribute_value, .{ .name = "ghostty_sgr_attribute_value" });
+        @export(&c.terminal_new, .{ .name = "ghostty_terminal_new" });
+        @export(&c.terminal_new_with_config, .{ .name = "ghostty_terminal_new_with_config" });
+        @export(&c.terminal_free, .{ .name = "ghostty_terminal_free" });
+        @export(&c.terminal_resize, .{ .name = "ghostty_terminal_resize" });
+        @export(&c.terminal_write, .{ .name = "ghostty_terminal_write" });
+        @export(&c.terminal_get_cols, .{ .name = "ghostty_terminal_get_cols" });
+        @export(&c.terminal_get_rows, .{ .name = "ghostty_terminal_get_rows" });
+        @export(&c.terminal_get_cursor_x, .{ .name = "ghostty_terminal_get_cursor_x" });
+        @export(&c.terminal_get_cursor_y, .{ .name = "ghostty_terminal_get_cursor_y" });
+        @export(&c.terminal_get_cursor_visible, .{ .name = "ghostty_terminal_get_cursor_visible" });
+        @export(&c.terminal_get_scrollback_length, .{ .name = "ghostty_terminal_get_scrollback_length" });
+        @export(&c.terminal_get_line, .{ .name = "ghostty_terminal_get_line" });
+        @export(&c.terminal_get_scrollback_line, .{ .name = "ghostty_terminal_get_scrollback_line" });
+        @export(&c.terminal_is_dirty, .{ .name = "ghostty_terminal_is_dirty" });
+        @export(&c.terminal_is_row_dirty, .{ .name = "ghostty_terminal_is_row_dirty" });
+        @export(&c.terminal_clear_dirty, .{ .name = "ghostty_terminal_clear_dirty" });
 
         // On Wasm we need to export our allocator convenience functions.
         if (builtin.target.cpu.arch.isWasm()) {
