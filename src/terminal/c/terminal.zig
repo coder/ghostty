@@ -321,6 +321,15 @@ fn convertCell(wrapper: *const TerminalWrapper, cell: Cell, list_cell_opt: @Type
     if (cell_style.flags.blink) flags |= 1 << 6;
     if (cell_style.flags.faint) flags |= 1 << 7;
     
+    // Map cell.wide enum to actual character width
+    // narrow = 0 -> width 1, wide = 1 -> width 2, spacer_tail = 2 -> width 0
+    const width: u8 = switch (cell.wide) {
+        .narrow => 1,
+        .wide => 2,
+        .spacer_tail => 0,
+        .spacer_head => 0,
+    };
+    
     return .{
         .codepoint = cp,
         .fg_r = fg_rgb.r,
@@ -330,7 +339,7 @@ fn convertCell(wrapper: *const TerminalWrapper, cell: Cell, list_cell_opt: @Type
         .bg_g = bg_rgb.g,
         .bg_b = bg_rgb.b,
         .flags = flags,
-        .width = @intFromEnum(cell.wide),
+        .width = width,
     };
 }
 
