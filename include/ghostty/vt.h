@@ -28,6 +28,7 @@
  * @section groups_sec API Reference
  *
  * The API is organized into the following groups:
+ * - @ref terminal "Terminal Emulator" - Complete terminal emulator with VT parsing
  * - @ref key "Key Encoding" - Encode key events into terminal sequences
  * - @ref osc "OSC Parser" - Parse OSC (Operating System Command) sequences
  * - @ref sgr "SGR Parser" - Parse SGR (Select Graphic Rendition) sequences
@@ -74,6 +75,7 @@ extern "C" {
 
 #include <ghostty/vt/result.h>
 #include <ghostty/vt/allocator.h>
+#include <ghostty/vt/terminal.h>
 #include <ghostty/vt/osc.h>
 #include <ghostty/vt/sgr.h>
 #include <ghostty/vt/key.h>
