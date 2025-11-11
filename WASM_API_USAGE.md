@@ -11,9 +11,18 @@ import fs from 'fs';
 
 // Load WASM module
 const wasmBinary = fs.readFileSync('./ghostty-vt.wasm');
-const wasmModule = await WebAssembly.instantiate(wasmBinary, {
-  env: {}  // Add imports if needed
-});
+
+// Provide required imports
+const imports = {
+  env: {
+    // Logging function (required by std.log in WASM)
+    log: (level, scope_ptr, scope_len, msg_ptr, msg_len) => {
+      // Can be empty for production, or implement for debugging
+    }
+  }
+};
+
+const wasmModule = await WebAssembly.instantiate(wasmBinary, imports);
 
 const { exports } = wasmModule.instance;
 const { memory } = exports;

@@ -190,8 +190,32 @@ The following items were explicitly deferred per requirements:
 # Build WASM
 zig build lib-vt -Dtarget=wasm32-freestanding -Doptimize=ReleaseSmall
 
-# Run tests (requires Node.js)
+# Run tests (requires Node.js v16+)
 node test/wasm-terminal-test.mjs
+
+# Enable debug logging (if needed)
+DEBUG_WASM_LOG=1 node test/wasm-terminal-test.mjs
+```
+
+### Troubleshooting
+
+If you get a `LinkError` about missing imports:
+
+The WASM module requires `env.log` for `std.log` output. The test harness provides this automatically. If you're integrating the WASM elsewhere, provide:
+
+```javascript
+const imports = {
+  env: {
+    log: (level, scope_ptr, scope_len, msg_ptr, msg_len) => {
+      // Handle or ignore logging
+    }
+  }
+};
+```
+
+To inspect WASM imports, run:
+```bash
+./test/check-wasm-imports.sh
 ```
 
 **Expected Output:**

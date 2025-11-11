@@ -15,9 +15,30 @@ const __dirname = dirname(__filename);
 // Load WASM
 const wasmPath = join(__dirname, '../zig-out/bin/ghostty-vt.wasm');
 const wasmBinary = fs.readFileSync(wasmPath);
-const wasmModule = await WebAssembly.instantiate(wasmBinary, {
-  env: {}
-});
+
+// WASM imports - provide required functions
+const imports = {
+  env: {
+    // Logging function (WASM std.log uses this)
+    // Signature: log(level: u32, scope_ptr: [*]const u8, scope_len: usize, 
+    //                 msg_ptr: [*]const u8, msg_len: usize)
+    log: (level, scope_ptr, scope_len, msg_ptr, msg_len) => {
+      // Optionally decode and print logs for debugging
+      // For production tests, we can just ignore these
+      if (process.env.DEBUG_WASM_LOG) {
+        const memory = wasmModule.instance.exports.memory;
+        const scopeBytes = new Uint8Array(memory.buffer, scope_ptr, scope_len);
+        const msgBytes = new Uint8Array(memory.buffer, msg_ptr, msg_len);
+        const scope = new TextDecoder().decode(scopeBytes);
+        const msg = new TextDecoder().decode(msgBytes);
+        const levels = ['err', 'warn', 'info', 'debug'];
+        console.error(`[${levels[level] || 'log'}] ${scope}: ${msg}`);
+      }
+    },
+  }
+};
+
+const wasmModule = await WebAssembly.instantiate(wasmBinary, imports);
 
 const exports = wasmModule.instance.exports;
 const memory = exports.memory;
