@@ -28,9 +28,6 @@ const TerminalWrapper = struct {
     /// The terminal instance
     terminal: Terminal,
     
-    /// Stream for processing VT sequences
-    stream: ReadonlyStream,
-    
     /// Dirty tracking - which rows have changed since last clear
     dirty_rows: []bool,
     
@@ -120,7 +117,7 @@ pub fn newWithConfig(
     }
     
     // Create terminal
-    var terminal = Terminal.init(
+    const terminal = Terminal.init(
         alloc,
         .{
             .cols = @intCast(cols),
@@ -137,9 +134,6 @@ pub fn newWithConfig(
         return null;
     };
     
-    // Create stream for VT processing
-    const stream = terminal.vtStream();
-    
     // Allocate dirty tracking
     const rows_usize: usize = @intCast(rows);
     const dirty_rows = alloc.alloc(bool, rows_usize) catch |err| {
@@ -155,7 +149,6 @@ pub fn newWithConfig(
     wrapper.* = .{
         .alloc = alloc,
         .terminal = terminal,
-        .stream = stream,
         .dirty_rows = dirty_rows,
         .config = config,
     };
@@ -202,9 +195,12 @@ pub fn resize(ptr: ?*anyopaque, cols: c_int, rows: c_int) callconv(.c) void {
 pub fn write(ptr: ?*anyopaque, data: [*]const u8, len: usize) callconv(.c) void {
     const wrapper: *TerminalWrapper = @ptrCast(@alignCast(ptr orelse return));
     
+    // Create stream for this write operation
+    var stream = wrapper.terminal.vtStream();
+    
     // Write data to terminal stream (this parses VT sequences)
     const slice = data[0..len];
-    wrapper.stream.nextSlice(slice) catch |err| {
+    stream.nextSlice(slice) catch |err| {
         log.err("Write failed: {}", .{err});
         return;
     };

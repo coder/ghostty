@@ -41,13 +41,13 @@ const imports = {
 const wasmModule = await WebAssembly.instantiate(wasmBinary, imports);
 
 const exports = wasmModule.instance.exports;
-const memory = exports.memory;
 
 // Helper: Allocate string in WASM memory
 function allocString(str) {
   const bytes = new TextEncoder().encode(str);
   const ptr = exports.ghostty_wasm_alloc_u8_array(bytes.length);
-  new Uint8Array(memory.buffer).set(bytes, ptr);
+  // Always get fresh buffer reference
+  new Uint8Array(exports.memory.buffer).set(bytes, ptr);
   return { ptr, len: bytes.length };
 }
 
@@ -59,8 +59,9 @@ function freePtr(ptr, len) {
 // Helper: Read cell data
 function readCells(ptr, count) {
   const cells = [];
-  const view = new DataView(memory.buffer, ptr);
-  const cellSize = 16; // sizeof(ghostty_cell_t)
+  // Always get fresh buffer reference (WASM memory can grow/move)
+  const view = new DataView(exports.memory.buffer, ptr);
+  const cellSize = 12; // sizeof(ghostty_cell_t) - actual size without padding
   
   for (let i = 0; i < count; i++) {
     const offset = i * cellSize;
@@ -125,7 +126,7 @@ freePtr(dataPtr, dataLen);
 console.log('  ✓ Wrote "Hello, World!"');
 
 // Read first line
-const bufferSize = 80 * 16; // 80 cells * 16 bytes
+const bufferSize = 80 * 12; // 80 cells * 12 bytes (actual size)
 const bufferPtr = exports.ghostty_wasm_alloc_u8_array(bufferSize);
 const count = exports.ghostty_terminal_get_line(term2, 0, bufferPtr, 80);
 assert.strictEqual(count, 80, 'should return 80 cells');
@@ -169,15 +170,15 @@ assert.strictEqual(x, 5, 'Cursor X should be 5 after "Hello"');
 assert.strictEqual(y, 0, 'Cursor Y should still be 0');
 console.log(`  ✓ After "Hello": (${x}, ${y})`);
 
-// Test newline
-const { ptr: p3b, len: l3b } = allocString('\n');
+// Test newline (use \r\n for full newline behavior)
+const { ptr: p3b, len: l3b } = allocString('\r\n');
 exports.ghostty_terminal_write(term3, p3b, l3b);
 freePtr(p3b, l3b);
 
 x = exports.ghostty_terminal_get_cursor_x(term3);
 y = exports.ghostty_terminal_get_cursor_y(term3);
-assert.strictEqual(x, 0, 'Cursor X should be 0 after newline');
-assert.strictEqual(y, 1, 'Cursor Y should be 1 after newline');
+assert.strictEqual(x, 0, 'Cursor X should be 0 after \\r\\n');
+assert.strictEqual(y, 1, 'Cursor Y should be 1 after \\r\\n');
 console.log(`  ✓ After newline: (${x}, ${y})`);
 
 exports.ghostty_terminal_free(term3);
@@ -196,10 +197,10 @@ exports.ghostty_terminal_write(term4, p4, l4);
 freePtr(p4, l4);
 
 // Read first line
-const buf4 = exports.ghostty_wasm_alloc_u8_array(80 * 16);
+const buf4 = exports.ghostty_wasm_alloc_u8_array(80 * 12);
 exports.ghostty_terminal_get_line(term4, 0, buf4, 80);
 const cells4 = readCells(buf4, 80);
-freePtr(buf4, 80 * 16);
+freePtr(buf4, 80 * 12);
 
 // First cell should be 'R' with red foreground
 assert.strictEqual(cells4[0].codepoint, 82, 'Should be "R"');
@@ -213,10 +214,10 @@ const { ptr: p4b, len: l4b } = allocString('\x1b[32m Green');
 exports.ghostty_terminal_write(term4, p4b, l4b);
 freePtr(p4b, l4b);
 
-const buf4b = exports.ghostty_wasm_alloc_u8_array(80 * 16);
+const buf4b = exports.ghostty_wasm_alloc_u8_array(80 * 12);
 exports.ghostty_terminal_get_line(term4, 0, buf4b, 80);
 const cells4b = readCells(buf4b, 80);
-freePtr(buf4b, 80 * 16);
+freePtr(buf4b, 80 * 12);
 
 // Cell after "Red" should have space, then 'G' should be green
 const greenCell = cells4b[4]; // After "Red " is the 'G'
@@ -279,10 +280,10 @@ assert.strictEqual(newRows, 30, 'Rows should be 30');
 console.log(`  ✓ Resized to ${newCols}x${newRows}`);
 
 // Verify content is still there
-const buf6 = exports.ghostty_wasm_alloc_u8_array(120 * 16);
+const buf6 = exports.ghostty_wasm_alloc_u8_array(120 * 12);
 exports.ghostty_terminal_get_line(term6, 0, buf6, 120);
 const cells6 = readCells(buf6, 120);
-freePtr(buf6, 120 * 16);
+freePtr(buf6, 120 * 12);
 const text6 = cellsToText(cells6.slice(0, 13));
 assert(text6.startsWith('Before resize'), 'Content should be preserved after resize');
 console.log('  ✓ Content preserved: "' + text6 + '"');
@@ -302,10 +303,10 @@ const { ptr: p7, len: l7 } = allocString('\x1b[1mBold');
 exports.ghostty_terminal_write(term7, p7, l7);
 freePtr(p7, l7);
 
-const buf7 = exports.ghostty_wasm_alloc_u8_array(80 * 16);
+const buf7 = exports.ghostty_wasm_alloc_u8_array(80 * 12);
 exports.ghostty_terminal_get_line(term7, 0, buf7, 80);
 const cells7 = readCells(buf7, 80);
-freePtr(buf7, 80 * 16);
+freePtr(buf7, 80 * 12);
 
 // Check bold flag (bit 0)
 const boldFlag = cells7[0].flags & (1 << 0);
@@ -317,10 +318,10 @@ const { ptr: p7b, len: l7b } = allocString('\x1b[0m\x1b[3mItalic');
 exports.ghostty_terminal_write(term7, p7b, l7b);
 freePtr(p7b, l7b);
 
-const buf7b = exports.ghostty_wasm_alloc_u8_array(80 * 16);
+const buf7b = exports.ghostty_wasm_alloc_u8_array(80 * 12);
 exports.ghostty_terminal_get_line(term7, 0, buf7b, 80);
 const cells7b = readCells(buf7b, 80);
-freePtr(buf7b, 80 * 16);
+freePtr(buf7b, 80 * 12);
 
 // Check italic flag (bit 1) - should be on cell after "Bold"
 const italicCell = cells7b[4]; // After "Bold" is "Italic"
@@ -345,10 +346,10 @@ freePtr(p8, l8);
 
 // Read each line
 for (let lineNum = 0; lineNum < 3; lineNum++) {
-  const buf8 = exports.ghostty_wasm_alloc_u8_array(80 * 16);
+  const buf8 = exports.ghostty_wasm_alloc_u8_array(80 * 12);
   exports.ghostty_terminal_get_line(term8, lineNum, buf8, 80);
   const cells8 = readCells(buf8, 80);
-  freePtr(buf8, 80 * 16);
+  freePtr(buf8, 80 * 12);
   const text8 = cellsToText(cells8).trim();
   console.log(`  ✓ Line ${lineNum}: "${text8}"`);
   assert(text8.startsWith(`Line ${lineNum + 1}`), `Line ${lineNum} should contain correct text`);
@@ -398,7 +399,7 @@ console.log('Test 10: Custom configuration');
 
 // Create config with custom colors and scrollback
 const configPtr = exports.ghostty_wasm_alloc_u8_array(12);
-const configView = new DataView(memory.buffer, configPtr, 12);
+const configView = new DataView(exports.memory.buffer, configPtr, 12);
 configView.setUint32(0, 5000, true);      // scrollback_limit
 configView.setUint32(4, 0x00FF00, true);  // fg_color (green)
 configView.setUint32(8, 0x000080, true);  // bg_color (navy blue)
@@ -414,10 +415,10 @@ const { ptr: p10, len: l10 } = allocString('Custom colors');
 exports.ghostty_terminal_write(term10, p10, l10);
 freePtr(p10, l10);
 
-const buf10 = exports.ghostty_wasm_alloc_u8_array(80 * 16);
+const buf10 = exports.ghostty_wasm_alloc_u8_array(80 * 12);
 exports.ghostty_terminal_get_line(term10, 0, buf10, 80);
 const cells10 = readCells(buf10, 80);
-freePtr(buf10, 80 * 16);
+freePtr(buf10, 80 * 12);
 
 // Check that background has blue component (navy blue)
 console.log(`  ✓ Colors: fg=(${cells10[0].fg.r},${cells10[0].fg.g},${cells10[0].fg.b}), bg=(${cells10[0].bg.r},${cells10[0].bg.g},${cells10[0].bg.b})`);

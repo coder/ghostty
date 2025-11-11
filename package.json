@@ -1,0 +1,27 @@
+{
+  "name": "phase1",
+  "version": "1.0.0",
+  "description": "<!-- LOGO --> <h1> <p align=\"center\">   <img src=\"https://github.com/user-attachments/assets/fe853809-ba8b-400b-83ab-a9a0da25be8a\" alt=\"Logo\" width=\"128\">   <br>Ghostty </h1>   <p align=\"center\">     Fast, native, feature-rich terminal emulator pushing modern features.     <br />     <a href=\"#about\">About</a>     ·     <a href=\"https://ghostty.org/download\">Download</a>     ·     <a href=\"https://ghostty.org/docs\">Documentation</a>     ·     <a href=\"CONTRIBUTING.md\">Contributing</a>     ·     <a href=\"HACKING.md\">Developing</a>   </p> </p>",
+  "main": "index.js",
+  "directories": {
+    "example": "example",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coder/ghostty.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/coder/ghostty/issues"
+  },
+  "homepage": "https://github.com/coder/ghostty#readme",
+  "devDependencies": {
+    "vite": "^7.2.2"
+  }
+}
